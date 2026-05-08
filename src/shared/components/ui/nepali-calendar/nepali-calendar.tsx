@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   BS_MONTHS,
@@ -35,6 +35,28 @@ type NepaliCalendarProps = {
   disabled?: boolean
 }
 
+type PopoverPlacement = 'top' | 'bottom'
+
+type PopoverPosition = {
+  top: number
+  left: number
+  width: number
+  maxHeight: number
+  placement: PopoverPlacement
+  ready: boolean
+}
+
+const POPOVER_GAP = 6
+const VIEWPORT_PADDING = 8
+const MOBILE_BREAKPOINT = 480
+const MIN_POPOVER_WIDTH = 280
+const DEFAULT_POPOVER_WIDTH = 320
+const MIN_POPOVER_HEIGHT = 220
+
+const clamp = (value: number, min: number, max: number) => {
+  return Math.min(Math.max(value, min), max)
+}
+
 export default function NepaliCalendar({
   value,
   onChange,
@@ -52,8 +74,18 @@ export default function NepaliCalendar({
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const popoverRef = useRef<HTMLDivElement | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
 
   const [open, setOpen] = useState(false)
+
+  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition>({
+    top: 0,
+    left: 0,
+    width: DEFAULT_POPOVER_WIDTH,
+    maxHeight: 400,
+    placement: 'bottom',
+    ready: false,
+  })
 
   const availableYears = useMemo(() => getAvailableYears(), [])
 
@@ -80,6 +112,114 @@ export default function NepaliCalendar({
 
   const hasError = Boolean(error && touched)
 
+  const updatePopoverPosition = useCallback(() => {
+    const triggerElement = triggerRef.current
+
+    if (!triggerElement) return
+
+    const triggerRect = triggerElement.getBoundingClientRect()
+    const popoverElement = popoverRef.current
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    const isMobile = viewportWidth <= MOBILE_BREAKPOINT
+
+    const measuredPopoverWidth = popoverElement?.offsetWidth || DEFAULT_POPOVER_WIDTH
+    const measuredPopoverHeight = popoverElement?.offsetHeight || MIN_POPOVER_HEIGHT
+
+    const maxAvailableWidth = viewportWidth - VIEWPORT_PADDING * 2
+
+    const desiredWidth = isMobile
+      ? maxAvailableWidth
+      : Math.max(triggerRect.width, measuredPopoverWidth, DEFAULT_POPOVER_WIDTH)
+
+    const popoverWidth = clamp(desiredWidth, MIN_POPOVER_WIDTH, maxAvailableWidth)
+
+    const availableSpaceBelow =
+      viewportHeight - triggerRect.bottom - POPOVER_GAP - VIEWPORT_PADDING
+
+    const availableSpaceAbove = triggerRect.top - POPOVER_GAP - VIEWPORT_PADDING
+
+    const shouldOpenAbove =
+      measuredPopoverHeight > availableSpaceBelow && availableSpaceAbove > availableSpaceBelow
+
+    const placement: PopoverPlacement = shouldOpenAbove ? 'top' : 'bottom'
+
+    const availableHeight = shouldOpenAbove ? availableSpaceAbove : availableSpaceBelow
+
+    const maxHeight = Math.max(
+      Math.min(availableHeight, viewportHeight - VIEWPORT_PADDING * 2),
+      MIN_POPOVER_HEIGHT,
+    )
+
+    let left = isMobile ? VIEWPORT_PADDING : triggerRect.left
+
+    if (!isMobile && left + popoverWidth > viewportWidth - VIEWPORT_PADDING) {
+      left = viewportWidth - VIEWPORT_PADDING - popoverWidth
+    }
+
+    left = clamp(left, VIEWPORT_PADDING, viewportWidth - VIEWPORT_PADDING - popoverWidth)
+
+    const visiblePopoverHeight = Math.min(measuredPopoverHeight, maxHeight)
+
+    let top = shouldOpenAbove
+      ? triggerRect.top - POPOVER_GAP - visiblePopoverHeight
+      : triggerRect.bottom + POPOVER_GAP
+
+    const maxAllowedTop = viewportHeight - VIEWPORT_PADDING - visiblePopoverHeight
+
+    top = clamp(top, VIEWPORT_PADDING, Math.max(VIEWPORT_PADDING, maxAllowedTop))
+
+    setPopoverPosition({
+      top,
+      left,
+      width: popoverWidth,
+      maxHeight,
+      placement,
+      ready: true,
+    })
+  }, [])
+
+  const throttledUpdatePopoverPosition = useCallback(() => {
+    if (animationFrameRef.current !== null) return
+
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      animationFrameRef.current = null
+      updatePopoverPosition()
+    })
+  }, [updatePopoverPosition])
+
+  useEffect(() => {
+    if (!open) return
+
+    setPopoverPosition((previous) => ({
+      ...previous,
+      ready: false,
+    }))
+
+    updatePopoverPosition()
+
+    const firstFrame = window.requestAnimationFrame(updatePopoverPosition)
+    const secondFrame = window.requestAnimationFrame(updatePopoverPosition)
+
+    window.addEventListener('resize', throttledUpdatePopoverPosition)
+    window.addEventListener('scroll', throttledUpdatePopoverPosition, true)
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      window.cancelAnimationFrame(secondFrame)
+
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+
+      window.removeEventListener('resize', throttledUpdatePopoverPosition)
+      window.removeEventListener('scroll', throttledUpdatePopoverPosition, true)
+    }
+  }, [open, updatePopoverPosition, throttledUpdatePopoverPosition])
+
   useEffect(() => {
     if (parsedValue && isValidBSDate(parsedValue)) {
       setViewYear(parsedValue.year)
@@ -93,7 +233,6 @@ export default function NepaliCalendar({
       const target = event.target as Node
 
       const clickedInsideWrapper = wrapperRef.current?.contains(target) ?? false
-
       const clickedInsidePopover = popoverRef.current?.contains(target) ?? false
 
       if (!clickedInsideWrapper && !clickedInsidePopover) {
@@ -180,6 +319,8 @@ export default function NepaliCalendar({
     setViewYear(year)
     setViewMonth(nextMonth)
     setSelectedDay(nextDay)
+
+    throttledUpdatePopoverPosition()
   }
 
   const handleMonthChange = (month: number) => {
@@ -188,6 +329,8 @@ export default function NepaliCalendar({
 
     setViewMonth(month)
     setSelectedDay(nextDay)
+
+    throttledUpdatePopoverPosition()
   }
 
   const handleDayChange = (day: number) => {
@@ -214,6 +357,8 @@ export default function NepaliCalendar({
 
     setViewYear(nextYear)
     setViewMonth(nextMonth)
+
+    throttledUpdatePopoverPosition()
   }
 
   const goToNextMonth = () => {
@@ -230,6 +375,8 @@ export default function NepaliCalendar({
 
     setViewYear(nextYear)
     setViewMonth(nextMonth)
+
+    throttledUpdatePopoverPosition()
   }
 
   const calendarCells = useMemo(() => {
@@ -260,9 +407,6 @@ export default function NepaliCalendar({
 
   const selectedValue = parsedValue ? formatBSDate(parsedValue) : ''
 
-  // eslint-disable-next-line react-hooks/refs
-  const triggerRect = triggerRef.current?.getBoundingClientRect()
-
   return (
     <>
       <div
@@ -289,6 +433,8 @@ export default function NepaliCalendar({
             setOpen((prev) => !prev)
           }}
           disabled={disabled}
+          aria-haspopup="dialog"
+          aria-expanded={open}
         >
           <span
             className={[
@@ -306,18 +452,27 @@ export default function NepaliCalendar({
       </div>
 
       {open &&
-        triggerRect &&
         createPortal(
           <div
             ref={popoverRef}
-            className="nepali-date-picker__popover"
+            className={[
+              'nepali-date-picker__popover',
+              `nepali-date-picker__popover--${popoverPosition.placement}`,
+            ]
+              .filter(Boolean)
+              .join(' ')}
             style={{
               position: 'fixed',
-              top: '50%',
-              left: '40%',
-              transform: 'translate(-50%, -50%)',
+              top: popoverPosition.top,
+              left: popoverPosition.left,
+              width: popoverPosition.width,
+              maxHeight: popoverPosition.maxHeight,
+              overflowY: 'auto',
               zIndex: 999999,
+              visibility: popoverPosition.ready ? 'visible' : 'hidden',
             }}
+            role="dialog"
+            aria-label="Nepali calendar"
           >
             <div className="nepali-calendar">
               <div className="nepali-calendar__header">
@@ -325,6 +480,7 @@ export default function NepaliCalendar({
                   type="button"
                   className="nepali-calendar__nav-btn"
                   onClick={goToPreviousMonth}
+                  aria-label="Previous month"
                 >
                   ‹
                 </button>
@@ -337,6 +493,7 @@ export default function NepaliCalendar({
                   type="button"
                   className="nepali-calendar__nav-btn"
                   onClick={goToNextMonth}
+                  aria-label="Next month"
                 >
                   ›
                 </button>
@@ -346,6 +503,7 @@ export default function NepaliCalendar({
                 <select
                   value={viewYear}
                   onChange={(event) => handleYearChange(Number(event.target.value))}
+                  aria-label="Select year"
                 >
                   {availableYears.map((year) => (
                     <option key={year} value={year}>
@@ -357,6 +515,7 @@ export default function NepaliCalendar({
                 <select
                   value={viewMonth}
                   onChange={(event) => handleMonthChange(Number(event.target.value))}
+                  aria-label="Select month"
                 >
                   {validMonthsForYear.map((item) => (
                     <option key={item.month} value={item.month} disabled={item.disabled}>
@@ -369,6 +528,7 @@ export default function NepaliCalendar({
                   value={selectedDay}
                   onChange={(event) => handleDayChange(Number(event.target.value))}
                   disabled={daysInMonth <= 0}
+                  aria-label="Select day"
                 >
                   {Array.from({ length: daysInMonth }, (_, index) => {
                     const day = index + 1
@@ -426,6 +586,7 @@ export default function NepaliCalendar({
                         .join(' ')}
                       disabled={dateDisabled}
                       onClick={() => selectDate(date)}
+                      aria-pressed={selected}
                     >
                       {toNepaliNumber(date.day)}
                     </button>

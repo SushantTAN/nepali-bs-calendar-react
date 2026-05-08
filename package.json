@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A lightweight React Nepali Bikram Sambat calendar/date picker component.",
   "license": "MIT",
-  "author": "Sarun Bhatta",
+  "author": "Sushant Tandukar",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

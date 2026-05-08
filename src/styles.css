@@ -1,24 +1,31 @@
+.nepali-date-picker,
+.nepali-date-picker *,
+.nepali-date-picker__popover,
+.nepali-date-picker__popover * {
+  box-sizing: border-box;
+}
+
 .nepali-date-picker {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: 100%;
+  gap: var(--ndp-gap, 6px);
+  width: var(--ndp-width, 100%);
 }
 
 .nepali-date-picker .input-label,
 .nepali-date-picker label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #222;
+  font-size: var(--ndp-label-font-size, 14px);
+  font-weight: var(--ndp-label-font-weight, 500);
+  color: var(--ndp-label-color, #222);
 }
 
 .nepali-date-picker__trigger {
   width: 100%;
-  min-height: 40px;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  background: #fff;
-  padding: 8px 12px;
+  min-height: var(--ndp-trigger-min-height, 40px);
+  border: 1px solid var(--ndp-trigger-border, #d9d9d9);
+  border-radius: var(--ndp-trigger-radius, 8px);
+  background: var(--ndp-trigger-bg, #fff);
+  padding: var(--ndp-trigger-padding, 8px 12px);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -26,141 +33,287 @@
 
 .nepali-date-picker__trigger:hover,
 .nepali-date-picker--open .nepali-date-picker__trigger {
-  border-color: #4096ff;
+  border-color: var(--ndp-trigger-border-hover, #4096ff);
 }
 
 .nepali-date-picker__trigger:focus-visible {
   outline: none;
-  border-color: #4096ff;
-  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.12);
+  border-color: var(--ndp-trigger-border-hover, #4096ff);
+  box-shadow: var(--ndp-trigger-focus-shadow, 0 0 0 2px rgba(5, 145, 255, 0.12));
 }
 
 .nepali-date-picker__trigger:disabled {
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.25);
+  background: var(--ndp-trigger-disabled-bg, #f5f5f5);
+  color: var(--ndp-trigger-disabled-color, rgba(0, 0, 0, 0.25));
   cursor: not-allowed;
 }
 
 .nepali-date-picker__value {
-  color: rgba(0, 0, 0, 0.88);
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  color: var(--ndp-value-color, rgba(0, 0, 0, 0.88));
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nepali-date-picker__value--placeholder {
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--ndp-placeholder-color, rgba(0, 0, 0, 0.4));
 }
 
 .nepali-date-picker--error .nepali-date-picker__trigger {
-  border-color: #ff4d4f;
+  border-color: var(--ndp-error-color, #ff4d4f);
 }
 
 .nepali-date-picker__error {
-  font-size: 13px;
-  color: #ff4d4f;
+  font-size: var(--ndp-error-font-size, 13px);
+  color: var(--ndp-error-color, #ff4d4f);
 }
 
 .nepali-date-picker__popover {
-  min-width: 320px;
+  min-width: var(--ndp-popover-min-width, 280px);
+  max-width: calc(100vw - 16px);
+  overscroll-behavior: contain;
+  border-radius: var(--nc-border-radius, 12px);
 }
 
 .nepali-calendar {
-  width: 320px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-  padding: 14px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  width: 100%;
+  max-width: 320px;
+  min-width: 0;
+  border: 1px solid var(--nc-border-color, #e5e7eb);
+  border-radius: var(--nc-border-radius, 12px);
+  background: var(--nc-bg, #fff);
+  box-shadow: var(--nc-shadow, 0 12px 32px rgba(15, 23, 42, 0.18));
+  padding: var(--nc-padding, 14px);
+  font-family: var(--nc-font-family,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      sans-serif);
 }
 
 .nepali-calendar__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--nc-header-gap, 8px);
+  margin-bottom: var(--nc-header-margin-bottom, 12px);
 }
 
 .nepali-calendar__title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--nc-title-font-size, 16px);
+  font-weight: var(--nc-title-font-weight, 600);
+  color: var(--nc-title-color, #111827);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nepali-calendar__nav-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
+  flex: 0 0 auto;
+  width: var(--nc-nav-btn-size, 32px);
+  height: var(--nc-nav-btn-size, 32px);
+  border: 1px solid var(--nc-nav-btn-border-color, #e5e7eb);
+  border-radius: var(--nc-nav-btn-radius, 8px);
+  background: var(--nc-nav-btn-bg, #fff);
+  color: var(--nc-nav-btn-color, #111827);
   cursor: pointer;
-  font-size: 22px;
+  font-size: var(--nc-nav-btn-font-size, 22px);
   line-height: 1;
 }
 
 .nepali-calendar__nav-btn:hover {
-  background: #f9fafb;
+  background: var(--nc-nav-btn-hover-bg, #f9fafb);
+  border-color: var(--nc-nav-btn-hover-border-color, #e5e7eb);
+  color: var(--nc-nav-btn-hover-color, #111827);
 }
 
 .nepali-calendar__controls {
   display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 8px;
-  margin-bottom: 12px;
+  grid-template-columns: var(--nc-controls-template, minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr));
+  gap: var(--nc-controls-gap, 8px);
+  margin-bottom: var(--nc-controls-margin-bottom, 12px);
 }
 
 .nepali-calendar__controls select {
-  height: 34px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
-  padding: 0 8px;
+  width: 100%;
+  min-width: 0;
+  height: var(--nc-select-height, 34px);
+  border: 1px solid var(--nc-select-border-color, #d1d5db);
+  border-radius: var(--nc-select-radius, 8px);
+  background: var(--nc-select-bg, #fff);
+  color: var(--nc-select-color, #111827);
+  padding: var(--nc-select-padding, 0 8px);
 }
 
 .nepali-calendar__weekdays,
 .nepali-calendar__grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--nc-grid-gap, 4px);
 }
 
 .nepali-calendar__weekdays {
-  margin-bottom: 6px;
+  margin-bottom: var(--nc-weekdays-margin-bottom, 6px);
 }
 
 .nepali-calendar__weekday {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--nc-weekday-font-size, 12px);
+  font-weight: var(--nc-weekday-font-weight, 600);
+  color: var(--nc-weekday-color, #6b7280);
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nepali-calendar__cell {
-  min-height: 36px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: #111827;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--nc-cell-min-height, 36px);
+  border: 1px solid var(--nc-cell-border-color, transparent);
+  border-radius: var(--nc-cell-radius, 8px);
+  background: var(--nc-cell-bg, transparent);
+  color: var(--nc-cell-color, #111827);
   cursor: pointer;
+  font-size: var(--nc-cell-font-size, 14px);
+  line-height: 1;
 }
 
 .nepali-calendar__cell:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--nc-cell-hover-bg, #f3f4f6);
+  border-color: var(--nc-cell-hover-border-color, transparent);
+  color: var(--nc-cell-hover-color, #111827);
 }
 
 .nepali-calendar__cell--selected {
-  background: #1677ff;
-  color: #fff;
+  background: var(--nc-cell-selected-bg, #1677ff);
+  color: var(--nc-cell-selected-color, #fff);
+  border-color: var(--nc-cell-selected-border-color, transparent);
 }
 
 .nepali-calendar__cell--selected:hover:not(:disabled) {
-  background: #1677ff;
+  background: var(--nc-cell-selected-hover-bg, #1677ff);
+  color: var(--nc-cell-selected-hover-color, #fff);
+  border-color: var(--nc-cell-selected-hover-border-color, transparent);
 }
 
 .nepali-calendar__cell--disabled {
-  color: #bdbdbd;
+  color: var(--nc-cell-disabled-color, #bdbdbd);
+  background: var(--nc-cell-disabled-bg, transparent);
   cursor: not-allowed;
 }
 
 .nepali-calendar__cell--empty {
-  min-height: 36px;
+  min-height: var(--nc-cell-min-height, 36px);
+}
+
+/* Tablet and smaller screens */
+@media (max-width: 640px) {
+  .nepali-date-picker__popover {
+    min-width: 280px;
+  }
+
+  .nepali-calendar {
+    padding: var(--nc-mobile-padding, 12px);
+  }
+
+  .nepali-calendar__title {
+    font-size: var(--nc-mobile-title-font-size, 15px);
+  }
+
+  .nepali-calendar__nav-btn {
+    width: var(--nc-mobile-nav-btn-size, 30px);
+    height: var(--nc-mobile-nav-btn-size, 30px);
+    font-size: var(--nc-mobile-nav-btn-font-size, 20px);
+  }
+
+  .nepali-calendar__controls {
+    gap: var(--nc-mobile-controls-gap, 6px);
+  }
+
+  .nepali-calendar__controls select {
+    height: var(--nc-mobile-select-height, 34px);
+    font-size: var(--nc-mobile-select-font-size, 13px);
+    padding: var(--nc-mobile-select-padding, 0 6px);
+  }
+
+  .nepali-calendar__weekday {
+    font-size: var(--nc-mobile-weekday-font-size, 11px);
+  }
+
+  .nepali-calendar__cell {
+    min-height: var(--nc-mobile-cell-min-height, 34px);
+    font-size: var(--nc-mobile-cell-font-size, 13px);
+  }
+}
+
+/* Small phones */
+@media (max-width: 420px) {
+  .nepali-date-picker__popover {
+    min-width: 0;
+    width: calc(100vw - 16px) !important;
+  }
+
+  .nepali-calendar {
+    border-radius: var(--nc-small-border-radius, 12px);
+    padding: var(--nc-small-padding, 10px);
+  }
+
+  .nepali-calendar__header {
+    gap: var(--nc-small-header-gap, 6px);
+    margin-bottom: var(--nc-small-header-margin-bottom, 10px);
+  }
+
+  .nepali-calendar__title {
+    font-size: var(--nc-small-title-font-size, 14px);
+  }
+
+  .nepali-calendar__controls {
+    grid-template-columns: 1fr;
+    gap: var(--nc-small-controls-gap, 6px);
+  }
+
+  .nepali-calendar__controls select {
+    height: var(--nc-small-select-height, 36px);
+  }
+
+  .nepali-calendar__weekdays,
+  .nepali-calendar__grid {
+    gap: var(--nc-small-grid-gap, 3px);
+  }
+
+  .nepali-calendar__cell {
+    min-height: var(--nc-small-cell-min-height, 32px);
+    border-radius: var(--nc-small-cell-radius, 7px);
+    font-size: var(--nc-small-cell-font-size, 12px);
+  }
+}
+
+/* Very tiny screens */
+@media (max-width: 340px) {
+  .nepali-calendar {
+    padding: var(--nc-tiny-padding, 8px);
+  }
+
+  .nepali-calendar__nav-btn {
+    width: var(--nc-tiny-nav-btn-size, 28px);
+    height: var(--nc-tiny-nav-btn-size, 28px);
+    font-size: var(--nc-tiny-nav-btn-font-size, 18px);
+  }
+
+  .nepali-calendar__weekday {
+    font-size: var(--nc-tiny-weekday-font-size, 10px);
+  }
+
+  .nepali-calendar__cell {
+    min-height: var(--nc-tiny-cell-min-height, 30px);
+    font-size: var(--nc-tiny-cell-font-size, 11px);
+  }
 }
