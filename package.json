@@ -1,6 +1,6 @@
 {
   "name": "nepali-bs-calendar-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight React Nepali Bikram Sambat calendar/date picker component.",
   "license": "MIT",
   "author": "Sushant Tandukar",
