@@ -13,6 +13,10 @@
     "type": "git",
     "url": "git+https://github.com/SushantTAN/nepali-bs-calendar-react.git"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "files": [
     "dist",
     "README.md",
