@@ -4,6 +4,8 @@ A lightweight, responsive React Nepali Bikram Sambat calendar/date picker compon
 
 This package provides a Nepali BS date picker with support for:
 
+- Dynamic calendar data via React Context
+- Static calendar component (non-popup)
 - Nepali Bikram Sambat calendar dates
 - Controlled date value
 - Minimum and maximum date limits
@@ -24,14 +26,32 @@ npm install nepali-bs-calendar-react
 
 ---
 
-## Basic Usage
+## Setup (Required)
+
+You must wrap your application (or the part using the calendar) with the `NepaliCalendarProvider`. This allows you to provide the calendar data dynamically.
+
+```tsx
+import { NepaliCalendarProvider, defaultCalendarData } from 'nepali-bs-calendar-react'
+
+function App() {
+  return (
+    <NepaliCalendarProvider data={defaultCalendarData}>
+      {/* Your components */}
+    </NepaliCalendarProvider>
+  )
+}
+```
+
+---
+
+## Basic Usage (Popup Picker)
 
 ```tsx
 import { useState } from 'react'
-import NepaliCalendar from 'nepali-bs-calendar-react'
+import { NepaliCalendar } from 'nepali-bs-calendar-react'
 import 'nepali-bs-calendar-react/styles.css'
 
-export default function App() {
+export default function MyComponent() {
   const [date, setDate] = useState<string | null>(null)
 
   return (
@@ -45,6 +65,56 @@ export default function App() {
   )
 }
 ```
+
+---
+
+## Static Calendar Usage
+
+If you want to display the calendar directly on the page without a popup, use `StaticNepaliCalendar`.
+
+```tsx
+import { useState } from 'react'
+import { StaticNepaliCalendar } from 'nepali-bs-calendar-react'
+
+export default function MyComponent() {
+  const [date, setDate] = useState<string | null>(null)
+
+  return (
+    <StaticNepaliCalendar
+      value={date}
+      onChange={(value) => setDate(value)}
+    />
+  )
+}
+```
+
+---
+
+## Dynamic Calendar Data
+
+You can provide your own calendar data if you need to support more years or custom month lengths.
+
+```tsx
+import { NepaliCalendarProvider, CalendarData } from 'nepali-bs-calendar-react'
+
+const customData: CalendarData = {
+  ref_ad: '2019-12-17',
+  ref_bs: '2076-09-01',
+  years: {
+    2076: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
+    // ... add more years
+  },
+}
+
+function App() {
+  return (
+    <NepaliCalendarProvider data={customData}>
+      <NepaliCalendar />
+    </NepaliCalendarProvider>
+  )
+}
+```
+
 
 > If your bundler does not automatically include library CSS, import it manually:
 >

@@ -1,7 +1,22 @@
 import './styles.css'
 
-export { default as NepaliCalendar } from './shared/components/ui/nepali-calendar/nepali-calendar'
+export {
+  default as NepaliCalendar,
+  StaticNepaliCalendar,
+  NepaliCalendarView,
+} from './shared/components/ui/nepali-calendar/nepali-calendar'
 export { default } from './shared/components/ui/nepali-calendar/nepali-calendar'
+
+export {
+  NepaliCalendarProvider,
+  useNepaliCalendarContext,
+} from './shared/components/ui/nepali-calendar/nepali-calendar-context'
+export type {
+  CalendarData,
+} from './shared/components/ui/nepali-calendar/nepali-calendar-context'
+
+export { default as defaultCalendarData } from './shared/components/ui/nepali-calendar/nepali-calendar.data'
+
 export type { NepaliDateValue } from './shared/components/ui/nepali-calendar/nepali-date-utils'
 export {
   BS_MONTHS,
@@ -21,3 +36,4 @@ export {
   parseBSDate,
   toNepaliNumber,
 } from './shared/components/ui/nepali-calendar/nepali-date-utils'
+

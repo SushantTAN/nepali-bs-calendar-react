@@ -15,8 +15,9 @@ import {
   parseBSDate,
   toNepaliNumber,
 } from './nepali-date-utils'
+import { useNepaliCalendarContext } from './nepali-calendar-context'
 
-type NepaliCalendarProps = {
+export type NepaliCalendarViewProps = {
   value?: string | null
   onChange?: (value: string, date: NepaliDateValue) => void
 
@@ -27,6 +28,329 @@ type NepaliCalendarProps = {
   isDateDisabled?: (date: NepaliDateValue) => boolean
 
   className?: string
+  onViewChange?: () => void
+}
+
+export function NepaliCalendarView({
+  value,
+  onChange,
+  disabledDates = [],
+  minDate,
+  maxDate,
+  isDateDisabled,
+  className = '',
+  onViewChange,
+}: NepaliCalendarViewProps) {
+  const { data } = useNepaliCalendarContext()
+
+  const availableYears = useMemo(() => getAvailableYears(data), [data])
+
+  const parsedValue = useMemo(() => parseBSDate(value), [value])
+
+  const initialDate = useMemo(() => {
+    if (parsedValue && isValidBSDate(data, parsedValue)) {
+      return parsedValue
+    }
+
+    return getFirstValidDate(data)
+  }, [data, parsedValue])
+
+  const [viewYear, setViewYear] = useState(initialDate.year)
+  const [viewMonth, setViewMonth] = useState(initialDate.month)
+  const [selectedDay, setSelectedDay] = useState(initialDate.day)
+
+  useEffect(() => {
+    if (parsedValue && isValidBSDate(data, parsedValue)) {
+      setViewYear(parsedValue.year)
+      setViewMonth(parsedValue.month)
+      setSelectedDay(parsedValue.day)
+    }
+  }, [data, parsedValue])
+
+  const disabledDateSet = useMemo(() => {
+    return new Set(disabledDates)
+  }, [disabledDates])
+
+  const parsedMinDate = useMemo(() => parseBSDate(minDate), [minDate])
+  const parsedMaxDate = useMemo(() => parseBSDate(maxDate), [maxDate])
+
+  const daysInMonth = getMonthDays(data, viewYear, viewMonth)
+
+  const validMonthsForYear = useMemo(() => {
+    return BS_MONTHS.map((monthName, index) => {
+      const month = index + 1
+      const days = getMonthDays(data, viewYear, month)
+
+      return {
+        month,
+        label: monthName,
+        disabled: days <= 0,
+      }
+    })
+  }, [data, viewYear])
+
+  const isDisabled = (date: NepaliDateValue) => {
+    if (!isValidBSDate(data, date)) return true
+
+    const formattedDate = formatBSDate(date)
+
+    if (disabledDateSet.has(formattedDate)) return true
+
+    if (parsedMinDate && compareBSDates(date, parsedMinDate) < 0) {
+      return true
+    }
+
+    if (parsedMaxDate && compareBSDates(date, parsedMaxDate) > 0) {
+      return true
+    }
+
+    if (isDateDisabled?.(date)) {
+      return true
+    }
+
+    return false
+  }
+
+  const selectDate = (date: NepaliDateValue) => {
+    if (isDisabled(date)) return
+
+    setViewYear(date.year)
+    setViewMonth(date.month)
+    setSelectedDay(date.day)
+
+    onChange?.(formatBSDate(date), date)
+  }
+
+  const handleYearChange = (year: number) => {
+    let nextMonth = viewMonth
+    let nextDay = selectedDay
+
+    if (getMonthDays(data, year, nextMonth) <= 0) {
+      nextMonth = 1
+    }
+
+    const nextDaysInMonth = getMonthDays(data, year, nextMonth)
+
+    nextDay = Math.min(nextDay, nextDaysInMonth || 1)
+
+    setViewYear(year)
+    setViewMonth(nextMonth)
+    setSelectedDay(nextDay)
+
+    onViewChange?.()
+  }
+
+  const handleMonthChange = (month: number) => {
+    const nextDaysInMonth = getMonthDays(data, viewYear, month)
+    const nextDay = Math.min(selectedDay, nextDaysInMonth || 1)
+
+    setViewMonth(month)
+    setSelectedDay(nextDay)
+
+    onViewChange?.()
+  }
+
+  const handleDayChange = (day: number) => {
+    const date = {
+      year: viewYear,
+      month: viewMonth,
+      day,
+    }
+
+    selectDate(date)
+  }
+
+  const goToPreviousMonth = () => {
+    let nextYear = viewYear
+    let nextMonth = viewMonth - 1
+
+    if (nextMonth < 1) {
+      nextYear -= 1
+      nextMonth = 12
+    }
+
+    if (!availableYears.includes(nextYear)) return
+    if (getMonthDays(data, nextYear, nextMonth) <= 0) return
+
+    setViewYear(nextYear)
+    setViewMonth(nextMonth)
+
+    onViewChange?.()
+  }
+
+  const goToNextMonth = () => {
+    let nextYear = viewYear
+    let nextMonth = viewMonth + 1
+
+    if (nextMonth > 12) {
+      nextYear += 1
+      nextMonth = 1
+    }
+
+    if (!availableYears.includes(nextYear)) return
+    if (getMonthDays(data, nextYear, nextMonth) <= 0) return
+
+    setViewYear(nextYear)
+    setViewMonth(nextMonth)
+
+    onViewChange?.()
+  }
+
+  const calendarCells = useMemo(() => {
+    if (daysInMonth <= 0) return []
+
+    const firstWeekday = getWeekdayOfBSDate(data, {
+      year: viewYear,
+      month: viewMonth,
+      day: 1,
+    })
+
+    const cells: Array<NepaliDateValue | null> = []
+
+    for (let i = 0; i < firstWeekday; i++) {
+      cells.push(null)
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      cells.push({
+        year: viewYear,
+        month: viewMonth,
+        day,
+      })
+    }
+
+    return cells
+  }, [data, viewYear, viewMonth, daysInMonth])
+
+  return (
+    <div className={`nepali-calendar ${className}`}>
+      <div className="nepali-calendar__header">
+        <button
+          type="button"
+          className="nepali-calendar__nav-btn"
+          onClick={goToPreviousMonth}
+          aria-label="Previous month"
+        >
+          ‹
+        </button>
+
+        <div className="nepali-calendar__title">
+          {BS_MONTHS[viewMonth - 1]} {viewYear}
+        </div>
+
+        <button
+          type="button"
+          className="nepali-calendar__nav-btn"
+          onClick={goToNextMonth}
+          aria-label="Next month"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="nepali-calendar__controls">
+        <select
+          value={viewYear}
+          onChange={(event) => handleYearChange(Number(event.target.value))}
+          aria-label="Select year"
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={viewMonth}
+          onChange={(event) => handleMonthChange(Number(event.target.value))}
+          aria-label="Select month"
+        >
+          {validMonthsForYear.map((item) => (
+            <option key={item.month} value={item.month} disabled={item.disabled}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedDay}
+          onChange={(event) => handleDayChange(Number(event.target.value))}
+          disabled={daysInMonth <= 0}
+          aria-label="Select day"
+        >
+          {Array.from({ length: daysInMonth }, (_, index) => {
+            const day = index + 1
+
+            const date = {
+              year: viewYear,
+              month: viewMonth,
+              day,
+            }
+
+            return (
+              <option key={day} value={day} disabled={isDisabled(date)}>
+                {toNepaliNumber(day)}
+              </option>
+            )
+          })}
+        </select>
+      </div>
+
+      <div className="nepali-calendar__weekdays">
+        {WEEK_DAYS.map((day) => (
+          <div key={day} className="nepali-calendar__weekday">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      <div className="nepali-calendar__grid">
+        {calendarCells.map((date, index) => {
+          if (!date) {
+            return (
+              <div
+                key={`empty-${index}`}
+                className="nepali-calendar__cell nepali-calendar__cell--empty"
+              />
+            )
+          }
+
+          const formattedDate = formatBSDate(date)
+
+          const dateDisabled = isDisabled(date)
+
+          const selected = value === formattedDate
+
+          return (
+            <button
+              type="button"
+              key={formattedDate}
+              className={[
+                'nepali-calendar__cell',
+                selected ? 'nepali-calendar__cell--selected' : '',
+                dateDisabled ? 'nepali-calendar__cell--disabled' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              disabled={dateDisabled}
+              onClick={() => handleDayChange(date.day)}
+              aria-pressed={selected}
+            >
+              {toNepaliNumber(date.day)}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export function StaticNepaliCalendar(props: NepaliCalendarViewProps) {
+  return <NepaliCalendarView {...props} />
+}
+
+type NepaliCalendarProps = NepaliCalendarViewProps & {
   placeholder?: string
 
   label?: string
@@ -87,29 +411,8 @@ export default function NepaliCalendar({
     ready: false,
   })
 
-  const availableYears = useMemo(() => getAvailableYears(), [])
-
+  const { data } = useNepaliCalendarContext()
   const parsedValue = useMemo(() => parseBSDate(value), [value])
-
-  const initialDate = useMemo(() => {
-    if (parsedValue && isValidBSDate(parsedValue)) {
-      return parsedValue
-    }
-
-    return getFirstValidDate()
-  }, [parsedValue])
-
-  const [viewYear, setViewYear] = useState(initialDate.year)
-  const [viewMonth, setViewMonth] = useState(initialDate.month)
-  const [selectedDay, setSelectedDay] = useState(initialDate.day)
-
-  const disabledDateSet = useMemo(() => {
-    return new Set(disabledDates)
-  }, [disabledDates])
-
-  const parsedMinDate = useMemo(() => parseBSDate(minDate), [minDate])
-  const parsedMaxDate = useMemo(() => parseBSDate(maxDate), [maxDate])
-
   const hasError = Boolean(error && touched)
 
   const updatePopoverPosition = useCallback(() => {
@@ -221,14 +524,6 @@ export default function NepaliCalendar({
   }, [open, updatePopoverPosition, throttledUpdatePopoverPosition])
 
   useEffect(() => {
-    if (parsedValue && isValidBSDate(parsedValue)) {
-      setViewYear(parsedValue.year)
-      setViewMonth(parsedValue.month)
-      setSelectedDay(parsedValue.day)
-    }
-  }, [parsedValue])
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
 
@@ -255,155 +550,10 @@ export default function NepaliCalendar({
     }
   }, [])
 
-  const daysInMonth = getMonthDays(viewYear, viewMonth)
-
-  const validMonthsForYear = useMemo(() => {
-    return BS_MONTHS.map((monthName, index) => {
-      const month = index + 1
-      const days = getMonthDays(viewYear, month)
-
-      return {
-        month,
-        label: monthName,
-        disabled: days <= 0,
-      }
-    })
-  }, [viewYear])
-
-  const isDisabled = (date: NepaliDateValue) => {
-    if (!isValidBSDate(date)) return true
-
-    const formattedDate = formatBSDate(date)
-
-    if (disabledDateSet.has(formattedDate)) return true
-
-    if (parsedMinDate && compareBSDates(date, parsedMinDate) < 0) {
-      return true
-    }
-
-    if (parsedMaxDate && compareBSDates(date, parsedMaxDate) > 0) {
-      return true
-    }
-
-    if (isDateDisabled?.(date)) {
-      return true
-    }
-
-    return false
-  }
-
-  const selectDate = (date: NepaliDateValue) => {
-    if (isDisabled(date)) return
-
-    setViewYear(date.year)
-    setViewMonth(date.month)
-    setSelectedDay(date.day)
-
-    onChange?.(formatBSDate(date), date)
-
+  const handleDateSelect = (formattedValue: string, dateValue: NepaliDateValue) => {
+    onChange?.(formattedValue, dateValue)
     setOpen(false)
   }
-
-  const handleYearChange = (year: number) => {
-    let nextMonth = viewMonth
-    let nextDay = selectedDay
-
-    if (getMonthDays(year, nextMonth) <= 0) {
-      nextMonth = 1
-    }
-
-    const nextDaysInMonth = getMonthDays(year, nextMonth)
-
-    nextDay = Math.min(nextDay, nextDaysInMonth || 1)
-
-    setViewYear(year)
-    setViewMonth(nextMonth)
-    setSelectedDay(nextDay)
-
-    throttledUpdatePopoverPosition()
-  }
-
-  const handleMonthChange = (month: number) => {
-    const nextDaysInMonth = getMonthDays(viewYear, month)
-    const nextDay = Math.min(selectedDay, nextDaysInMonth || 1)
-
-    setViewMonth(month)
-    setSelectedDay(nextDay)
-
-    throttledUpdatePopoverPosition()
-  }
-
-  const handleDayChange = (day: number) => {
-    const date = {
-      year: viewYear,
-      month: viewMonth,
-      day,
-    }
-
-    selectDate(date)
-  }
-
-  const goToPreviousMonth = () => {
-    let nextYear = viewYear
-    let nextMonth = viewMonth - 1
-
-    if (nextMonth < 1) {
-      nextYear -= 1
-      nextMonth = 12
-    }
-
-    if (!availableYears.includes(nextYear)) return
-    if (getMonthDays(nextYear, nextMonth) <= 0) return
-
-    setViewYear(nextYear)
-    setViewMonth(nextMonth)
-
-    throttledUpdatePopoverPosition()
-  }
-
-  const goToNextMonth = () => {
-    let nextYear = viewYear
-    let nextMonth = viewMonth + 1
-
-    if (nextMonth > 12) {
-      nextYear += 1
-      nextMonth = 1
-    }
-
-    if (!availableYears.includes(nextYear)) return
-    if (getMonthDays(nextYear, nextMonth) <= 0) return
-
-    setViewYear(nextYear)
-    setViewMonth(nextMonth)
-
-    throttledUpdatePopoverPosition()
-  }
-
-  const calendarCells = useMemo(() => {
-    if (daysInMonth <= 0) return []
-
-    const firstWeekday = getWeekdayOfBSDate({
-      year: viewYear,
-      month: viewMonth,
-      day: 1,
-    })
-
-    const cells: Array<NepaliDateValue | null> = []
-
-    for (let i = 0; i < firstWeekday; i++) {
-      cells.push(null)
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      cells.push({
-        year: viewYear,
-        month: viewMonth,
-        day,
-      })
-    }
-
-    return cells
-  }, [viewYear, viewMonth, daysInMonth])
 
   const selectedValue = parsedValue ? formatBSDate(parsedValue) : ''
 
@@ -474,126 +624,15 @@ export default function NepaliCalendar({
             role="dialog"
             aria-label="Nepali calendar"
           >
-            <div className="nepali-calendar">
-              <div className="nepali-calendar__header">
-                <button
-                  type="button"
-                  className="nepali-calendar__nav-btn"
-                  onClick={goToPreviousMonth}
-                  aria-label="Previous month"
-                >
-                  ‹
-                </button>
-
-                <div className="nepali-calendar__title">
-                  {BS_MONTHS[viewMonth - 1]} {viewYear}
-                </div>
-
-                <button
-                  type="button"
-                  className="nepali-calendar__nav-btn"
-                  onClick={goToNextMonth}
-                  aria-label="Next month"
-                >
-                  ›
-                </button>
-              </div>
-
-              <div className="nepali-calendar__controls">
-                <select
-                  value={viewYear}
-                  onChange={(event) => handleYearChange(Number(event.target.value))}
-                  aria-label="Select year"
-                >
-                  {availableYears.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={viewMonth}
-                  onChange={(event) => handleMonthChange(Number(event.target.value))}
-                  aria-label="Select month"
-                >
-                  {validMonthsForYear.map((item) => (
-                    <option key={item.month} value={item.month} disabled={item.disabled}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedDay}
-                  onChange={(event) => handleDayChange(Number(event.target.value))}
-                  disabled={daysInMonth <= 0}
-                  aria-label="Select day"
-                >
-                  {Array.from({ length: daysInMonth }, (_, index) => {
-                    const day = index + 1
-
-                    const date = {
-                      year: viewYear,
-                      month: viewMonth,
-                      day,
-                    }
-
-                    return (
-                      <option key={day} value={day} disabled={isDisabled(date)}>
-                        {toNepaliNumber(day)}
-                      </option>
-                    )
-                  })}
-                </select>
-              </div>
-
-              <div className="nepali-calendar__weekdays">
-                {WEEK_DAYS.map((day) => (
-                  <div key={day} className="nepali-calendar__weekday">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              <div className="nepali-calendar__grid">
-                {calendarCells.map((date, index) => {
-                  if (!date) {
-                    return (
-                      <div
-                        key={`empty-${index}`}
-                        className="nepali-calendar__cell nepali-calendar__cell--empty"
-                      />
-                    )
-                  }
-
-                  const formattedDate = formatBSDate(date)
-
-                  const dateDisabled = isDisabled(date)
-
-                  const selected = value === formattedDate
-
-                  return (
-                    <button
-                      type="button"
-                      key={formattedDate}
-                      className={[
-                        'nepali-calendar__cell',
-                        selected ? 'nepali-calendar__cell--selected' : '',
-                        dateDisabled ? 'nepali-calendar__cell--disabled' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      disabled={dateDisabled}
-                      onClick={() => selectDate(date)}
-                      aria-pressed={selected}
-                    >
-                      {toNepaliNumber(date.day)}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            <NepaliCalendarView
+              value={value}
+              onChange={handleDateSelect}
+              disabledDates={disabledDates}
+              minDate={minDate}
+              maxDate={maxDate}
+              isDateDisabled={isDateDisabled}
+              onViewChange={throttledUpdatePopoverPosition}
+            />
           </div>,
           document.body,
         )}
