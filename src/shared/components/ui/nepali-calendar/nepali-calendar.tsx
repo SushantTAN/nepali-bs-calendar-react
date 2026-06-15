@@ -43,16 +43,16 @@ export function NepaliCalendarView({
 }: NepaliCalendarViewProps) {
   const { data } = useNepaliCalendarContext()
 
-  const availableYears = useMemo(() => getAvailableYears(data), [data])
+  const availableYears = useMemo(() => getAvailableYears(), [data])
 
   const parsedValue = useMemo(() => parseBSDate(value), [value])
 
   const initialDate = useMemo(() => {
-    if (parsedValue && isValidBSDate(data, parsedValue)) {
+    if (parsedValue && isValidBSDate( parsedValue)) {
       return parsedValue
     }
 
-    return getFirstValidDate(data)
+    return getFirstValidDate()
   }, [data, parsedValue])
 
   const [viewYear, setViewYear] = useState(initialDate.year)
@@ -60,7 +60,7 @@ export function NepaliCalendarView({
   const [selectedDay, setSelectedDay] = useState(initialDate.day)
 
   useEffect(() => {
-    if (parsedValue && isValidBSDate(data, parsedValue)) {
+    if (parsedValue && isValidBSDate(parsedValue)) {
       setViewYear(parsedValue.year)
       setViewMonth(parsedValue.month)
       setSelectedDay(parsedValue.day)
@@ -74,12 +74,12 @@ export function NepaliCalendarView({
   const parsedMinDate = useMemo(() => parseBSDate(minDate), [minDate])
   const parsedMaxDate = useMemo(() => parseBSDate(maxDate), [maxDate])
 
-  const daysInMonth = getMonthDays(data, viewYear, viewMonth)
+  const daysInMonth = getMonthDays( viewYear, viewMonth)
 
   const validMonthsForYear = useMemo(() => {
     return BS_MONTHS.map((monthName, index) => {
       const month = index + 1
-      const days = getMonthDays(data, viewYear, month)
+      const days = getMonthDays( viewYear, month)
 
       return {
         month,
@@ -90,7 +90,7 @@ export function NepaliCalendarView({
   }, [data, viewYear])
 
   const isDisabled = (date: NepaliDateValue) => {
-    if (!isValidBSDate(data, date)) return true
+    if (!isValidBSDate( date)) return true
 
     const formattedDate = formatBSDate(date)
 
@@ -125,11 +125,11 @@ export function NepaliCalendarView({
     let nextMonth = viewMonth
     let nextDay = selectedDay
 
-    if (getMonthDays(data, year, nextMonth) <= 0) {
+    if (getMonthDays( year, nextMonth) <= 0) {
       nextMonth = 1
     }
 
-    const nextDaysInMonth = getMonthDays(data, year, nextMonth)
+    const nextDaysInMonth = getMonthDays( year, nextMonth)
 
     nextDay = Math.min(nextDay, nextDaysInMonth || 1)
 
@@ -141,7 +141,7 @@ export function NepaliCalendarView({
   }
 
   const handleMonthChange = (month: number) => {
-    const nextDaysInMonth = getMonthDays(data, viewYear, month)
+    const nextDaysInMonth = getMonthDays( viewYear, month)
     const nextDay = Math.min(selectedDay, nextDaysInMonth || 1)
 
     setViewMonth(month)
@@ -170,7 +170,7 @@ export function NepaliCalendarView({
     }
 
     if (!availableYears.includes(nextYear)) return
-    if (getMonthDays(data, nextYear, nextMonth) <= 0) return
+    if (getMonthDays( nextYear, nextMonth) <= 0) return
 
     setViewYear(nextYear)
     setViewMonth(nextMonth)
@@ -188,7 +188,7 @@ export function NepaliCalendarView({
     }
 
     if (!availableYears.includes(nextYear)) return
-    if (getMonthDays(data, nextYear, nextMonth) <= 0) return
+    if (getMonthDays( nextYear, nextMonth) <= 0) return
 
     setViewYear(nextYear)
     setViewMonth(nextMonth)
@@ -199,7 +199,7 @@ export function NepaliCalendarView({
   const calendarCells = useMemo(() => {
     if (daysInMonth <= 0) return []
 
-    const firstWeekday = getWeekdayOfBSDate(data, {
+    const firstWeekday = getWeekdayOfBSDate( {
       year: viewYear,
       month: viewMonth,
       day: 1,

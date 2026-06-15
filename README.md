@@ -16,6 +16,10 @@ This package provides a Nepali BS date picker with support for:
 - Portal-based dropdown rendering
 - CSS variable based styling overrides
 
+## Example
+
+[View the example here](https://nepali-bs-calendar-website.vercel.app/)
+
 ---
 
 ## Installation
@@ -41,6 +45,13 @@ function App() {
   )
 }
 ```
+
+---
+
+## New In version 0.2.0 
+
+- Performance optimizations for date conversion functions
+- Interactive documentation for the calendar added [here](https://nepali-bs-calendar-website.vercel.app/)
 
 ---
 
