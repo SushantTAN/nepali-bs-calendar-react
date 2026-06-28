@@ -1,5 +1,13 @@
 import { createPortal } from 'react-dom'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ComponentType,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 import {
   BS_MONTHS,
@@ -15,7 +23,40 @@ import {
   parseBSDate,
   toNepaliNumber,
 } from './nepali-date-utils'
-import { useNepaliCalendarContext } from './nepali-calendar-context'
+import { useNepaliCalendarContext, CalendarData } from './nepali-calendar-context'
+
+export type NepaliCalendarViewRenderProps = {
+  value?: string | null
+  selectedValue: string
+  parsedValue: NepaliDateValue | null
+  viewYear: number
+  viewMonth: number
+  selectedDay: number
+  availableYears: number[]
+  validMonthsForYear: Array<{ month: number; label: string; disabled: boolean }>
+  daysInMonth: number
+  calendarCells: Array<NepaliDateValue | null>
+  disabledDates: string[]
+  minDate?: string
+  maxDate?: string
+  isDateDisabled?: (date: NepaliDateValue) => boolean
+  disabledDateSet: Set<string>
+  calendarData: CalendarData
+  isDisabled: (date: NepaliDateValue) => boolean
+  selectDate: (date: NepaliDateValue) => void
+  handleYearChange: (year: number) => void
+  handleMonthChange: (month: number) => void
+  handleDayChange: (day: number) => void
+  goToPreviousMonth: () => void
+  goToNextMonth: () => void
+  onViewChange?: () => void
+  formatBSDate: (date: NepaliDateValue) => string
+  toNepaliNumber: (value: string | number) => string
+  BS_MONTHS: string[]
+  WEEK_DAYS: string[]
+  className?: string
+  placeholder?: string
+}
 
 export type NepaliCalendarViewProps = {
   value?: string | null
@@ -28,7 +69,10 @@ export type NepaliCalendarViewProps = {
   isDateDisabled?: (date: NepaliDateValue) => boolean
 
   className?: string
+  placeholder?: string
   onViewChange?: () => void
+  calendarComponent?: ComponentType<NepaliCalendarViewRenderProps>
+  renderCalendar?: (props: NepaliCalendarViewRenderProps) => ReactNode
 }
 
 export function NepaliCalendarView({
@@ -39,7 +83,10 @@ export function NepaliCalendarView({
   maxDate,
   isDateDisabled,
   className = '',
+  placeholder,
   onViewChange,
+  calendarComponent: CalendarComponent,
+  renderCalendar,
 }: NepaliCalendarViewProps) {
   const { data } = useNepaliCalendarContext()
 
@@ -222,6 +269,49 @@ export function NepaliCalendarView({
     return cells
   }, [data, viewYear, viewMonth, daysInMonth])
 
+  const selectedValue = parsedValue ? formatBSDate(parsedValue) : ''
+
+  const renderProps: NepaliCalendarViewRenderProps = {
+    value,
+    selectedValue,
+    parsedValue,
+    viewYear,
+    viewMonth,
+    selectedDay,
+    availableYears,
+    validMonthsForYear,
+    daysInMonth,
+    calendarCells,
+    disabledDates,
+    minDate,
+    maxDate,
+    isDateDisabled,
+    disabledDateSet,
+    calendarData: data,
+    isDisabled,
+    selectDate,
+    handleYearChange,
+    handleMonthChange,
+    handleDayChange,
+    goToPreviousMonth,
+    goToNextMonth,
+    onViewChange,
+    formatBSDate,
+    toNepaliNumber,
+    BS_MONTHS,
+    WEEK_DAYS,
+    className,
+    placeholder,
+  }
+
+  if (CalendarComponent) {
+    return <CalendarComponent {...renderProps} />
+  }
+
+  if (renderCalendar) {
+    return <>{renderCalendar(renderProps)}</>
+  }
+
   return (
     <div className={`nepali-calendar ${className}`}>
       <div className="nepali-calendar__header">
@@ -390,6 +480,8 @@ export default function NepaliCalendar({
   isDateDisabled,
   className = '',
   placeholder = 'Select date',
+  calendarComponent,
+  renderCalendar,
   label,
   error,
   touched,
@@ -631,6 +723,10 @@ export default function NepaliCalendar({
               minDate={minDate}
               maxDate={maxDate}
               isDateDisabled={isDateDisabled}
+              className={className}
+              placeholder={placeholder}
+              calendarComponent={calendarComponent}
+              renderCalendar={renderCalendar}
               onViewChange={throttledUpdatePopoverPosition}
             />
           </div>,

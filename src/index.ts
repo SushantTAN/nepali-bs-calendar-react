@@ -5,6 +5,10 @@ export {
   StaticNepaliCalendar,
   NepaliCalendarView,
 } from './shared/components/ui/nepali-calendar/nepali-calendar'
+export type {
+  NepaliCalendarViewProps,
+  NepaliCalendarViewRenderProps,
+} from './shared/components/ui/nepali-calendar/nepali-calendar'
 export { default } from './shared/components/ui/nepali-calendar/nepali-calendar'
 
 export {

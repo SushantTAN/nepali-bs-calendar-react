@@ -50,8 +50,7 @@ function App() {
 
 ## New In version 0.2.0 
 
-- Performance optimizations for date conversion functions
-- Interactive documentation for the calendar added [here](https://nepali-bs-calendar-website.vercel.app/)
+- New prop "calendarComponent"
 
 ---
 
@@ -94,6 +93,55 @@ export default function MyComponent() {
     <StaticNepaliCalendar
       value={date}
       onChange={(value) => setDate(value)}
+    />
+  )
+}
+```
+
+You can also use `calendarComponent` with `StaticNepaliCalendar` to customize the static calendar UI.
+
+```tsx
+import { useState } from 'react'
+import {
+  StaticNepaliCalendar,
+  NepaliCalendarViewRenderProps,
+} from 'nepali-bs-calendar-react'
+
+function CustomCalendar({
+  viewYear,
+  viewMonth,
+  calendarCells,
+  handleDayChange,
+  isDisabled,
+  BS_MONTHS,
+  toNepaliNumber,
+}: NepaliCalendarViewRenderProps) {
+  return (
+    <div>
+      <h3>{BS_MONTHS[viewMonth - 1]} {viewYear}</h3>
+
+      {calendarCells.map((date, index) => (
+        <button
+          key={date ? `${date.year}-${date.month}-${date.day}` : `empty-${index}`}
+          type="button"
+          disabled={!date || isDisabled(date)}
+          onClick={() => date && handleDayChange(date.day)}
+        >
+          {date ? toNepaliNumber(date.day) : ''}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export default function MyComponent() {
+  const [date, setDate] = useState<string | null>(null)
+
+  return (
+    <StaticNepaliCalendar
+      value={date}
+      onChange={(value) => setDate(value)}
+      calendarComponent={CustomCalendar}
     />
   )
 }
@@ -163,6 +211,8 @@ Example:
 | `isDateDisabled` | `(date: NepaliDateValue) => boolean` | - | Custom function to disable a date. |
 | `label` | `string` | - | Label displayed above the picker. |
 | `placeholder` | `string` | `Select date` | Placeholder text when no date is selected. |
+| `calendarComponent` | `React.ComponentType<NepaliCalendarViewRenderProps>` | `-` | Custom calendar component that receives internal calendar state, actions, and helper values. |
+| `renderCalendar` | `(props: NepaliCalendarViewRenderProps) => React.ReactNode` | `-` | Render prop alternative for custom calendar markup. |
 | `disabled` | `boolean` | `false` | Disables the picker. |
 | `error` | `string` | - | Error message shown below the picker. |
 | `touched` | `boolean` | `false` | Shows error only when `touched` is true. |
@@ -220,6 +270,72 @@ Output:
     '2081-02-10',
   ]}
 />
+```
+
+---
+
+## Custom Calendar Component
+
+You can render your own calendar UI while still using the library's calendar data and helpers.
+
+```tsx
+import { useState } from 'react'
+import {
+  NepaliCalendar,
+  NepaliCalendarViewRenderProps,
+} from 'nepali-bs-calendar-react'
+
+function CustomCalendar({
+  viewYear,
+  viewMonth,
+  calendarCells,
+  isDisabled,
+  handleDayChange,
+  goToPreviousMonth,
+  goToNextMonth,
+  BS_MONTHS,
+  WEEK_DAYS,
+  toNepaliNumber,
+}: NepaliCalendarViewRenderProps) {
+  return (
+    <div>
+      <div>
+        <button type="button" onClick={goToPreviousMonth}>Previous</button>
+        <span>{BS_MONTHS[viewMonth - 1]} {viewYear}</span>
+        <button type="button" onClick={goToNextMonth}>Next</button>
+      </div>
+      <div>
+        {WEEK_DAYS.map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+      <div>
+        {calendarCells.map((date, index) => (
+          <button
+            key={date ? `${date.year}-${date.month}-${date.day}` : `empty-${index}`}
+            type="button"
+            disabled={!date || isDisabled(date)}
+            onClick={() => date && handleDayChange(date.day)}
+          >
+            {date ? toNepaliNumber(date.day) : ''}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MyComponent() {
+  const [date, setDate] = useState<string | null>(null)
+
+  return (
+    <NepaliCalendar
+      value={date}
+      onChange={setDate}
+      calendarComponent={CustomCalendar}
+    />
+  )
+}
 ```
 
 ---
