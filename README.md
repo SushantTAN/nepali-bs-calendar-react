@@ -615,7 +615,7 @@ import {
 The calendar currently supports dates from **2076 BS** to **2090 BS** based on the bundled calendar data.
 
 ---
-
+<!-- 
 ## Development
 
 Clone the project and install dependencies:
@@ -636,9 +636,9 @@ Create a local npm package file:
 npm pack
 ```
 
----
+--- -->
 
-## Local Testing With a Demo App
+<!-- ## Local Testing With a Demo App
 
 From your library folder:
 
@@ -688,9 +688,9 @@ Run the demo app:
 
 ```bash
 npm run dev
-```
+``` -->
 
----
+<!-- ---
 
 ## Publishing
 
@@ -720,7 +720,7 @@ npm run build
 npm publish --access public
 ```
 
----
+--- -->
 
 ## License
 
