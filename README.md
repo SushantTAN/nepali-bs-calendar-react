@@ -15,6 +15,7 @@ This package provides a Nepali BS date picker with support for:
 - Responsive popup positioning
 - Portal-based dropdown rendering
 - CSS variable based styling overrides
+- Custom calendar component
 
 ## Example
 
@@ -45,6 +46,8 @@ function App() {
   )
 }
 ```
+
+Note: Data can be extracted from the scraper as well: [nepali-calendar-scraper](https://github.com/SushantTAN/nepali-calendar-scrapper) 
 
 ---
 
