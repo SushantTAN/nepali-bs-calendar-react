@@ -15,6 +15,7 @@ This package provides a Nepali BS date picker with support for:
 - Responsive popup positioning
 - Portal-based dropdown rendering
 - CSS variable based styling overrides
+- Custom calendar component
 
 ## Example
 
@@ -46,12 +47,13 @@ function App() {
 }
 ```
 
+Note: Data can be extracted from the scraper as well: [nepali-calendar-scraper](https://github.com/SushantTAN/nepali-calendar-scrapper) 
+
 ---
 
 ## New In version 0.2.0 
 
-- Performance optimizations for date conversion functions
-- Interactive documentation for the calendar added [here](https://nepali-bs-calendar-website.vercel.app/)
+- New prop [calendarComponent](#custom-calendar-component)
 
 ---
 
@@ -94,6 +96,55 @@ export default function MyComponent() {
     <StaticNepaliCalendar
       value={date}
       onChange={(value) => setDate(value)}
+    />
+  )
+}
+```
+
+You can also use `calendarComponent` with `StaticNepaliCalendar` to customize the static calendar UI.
+
+```tsx
+import { useState } from 'react'
+import {
+  StaticNepaliCalendar,
+  NepaliCalendarViewRenderProps,
+} from 'nepali-bs-calendar-react'
+
+function CustomCalendar({
+  viewYear,
+  viewMonth,
+  calendarCells,
+  handleDayChange,
+  isDisabled,
+  BS_MONTHS,
+  toNepaliNumber,
+}: NepaliCalendarViewRenderProps) {
+  return (
+    <div>
+      <h3>{BS_MONTHS[viewMonth - 1]} {viewYear}</h3>
+
+      {calendarCells.map((date, index) => (
+        <button
+          key={date ? `${date.year}-${date.month}-${date.day}` : `empty-${index}`}
+          type="button"
+          disabled={!date || isDisabled(date)}
+          onClick={() => date && handleDayChange(date.day)}
+        >
+          {date ? toNepaliNumber(date.day) : ''}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export default function MyComponent() {
+  const [date, setDate] = useState<string | null>(null)
+
+  return (
+    <StaticNepaliCalendar
+      value={date}
+      onChange={(value) => setDate(value)}
+      calendarComponent={CustomCalendar}
     />
   )
 }
@@ -163,6 +214,8 @@ Example:
 | `isDateDisabled` | `(date: NepaliDateValue) => boolean` | - | Custom function to disable a date. |
 | `label` | `string` | - | Label displayed above the picker. |
 | `placeholder` | `string` | `Select date` | Placeholder text when no date is selected. |
+| `calendarComponent` | `React.ComponentType<NepaliCalendarViewRenderProps>` | `-` | Custom calendar component that receives internal calendar state, actions, and helper values. |
+| `renderCalendar` | `(props: NepaliCalendarViewRenderProps) => React.ReactNode` | `-` | Render prop alternative for custom calendar markup. |
 | `disabled` | `boolean` | `false` | Disables the picker. |
 | `error` | `string` | - | Error message shown below the picker. |
 | `touched` | `boolean` | `false` | Shows error only when `touched` is true. |
@@ -220,6 +273,203 @@ Output:
     '2081-02-10',
   ]}
 />
+```
+
+---
+
+## Custom Calendar Component
+
+You can render your own calendar UI while still using the library's calendar data and helpers.
+
+```tsx
+import { useState } from 'react'
+import {
+  NepaliCalendar,
+  NepaliCalendarViewRenderProps,
+} from 'nepali-bs-calendar-react'
+
+function MyStaticCalendarComponent({
+  value,
+  viewYear,
+  viewMonth,
+  calendarCells,
+  goToPreviousMonth,
+  goToNextMonth,
+  handleYearChange,
+  handleMonthChange,
+  handleDayChange,
+  availableYears,
+  validMonthsForYear,
+  isDisabled,
+  formatBSDate,
+  toNepaliNumber,
+  BS_MONTHS,
+  WEEK_DAYS,
+}: NepaliCalendarViewRenderProps) {
+  return (
+    <div className="my-static-calendar">
+      
+
+      <div className="my-static-calendar__filters">
+        <select
+          value={viewYear}
+          onChange={(e) => handleYearChange(Number(e.target.value))}
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={viewMonth}
+          onChange={(e) => handleMonthChange(Number(e.target.value))}
+        >
+          {validMonthsForYear.map((monthItem) => (
+            <option
+              key={monthItem.month}
+              value={monthItem.month}
+              disabled={monthItem.disabled}
+            >
+              {monthItem.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="my-static-calendar__weekdays">
+        {WEEK_DAYS.map((day) => (
+          <div key={day}>{day}</div>
+        ))}
+      </div>
+
+      <div className="my-static-calendar__grid">
+        {calendarCells.map((date, index) => {
+
+            console.log("date", date, calendarCells)
+          if (!date) {
+            return <div key={`empty-${index}`} />
+          }
+
+          const formattedDate = formatBSDate(date)
+          const selected = value === formattedDate
+          const disabled = isDisabled(date)
+
+          return (
+            <button
+              key={formattedDate}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleDayChange(date.day)}
+              className={[
+                'my-static-calendar__day',
+                selected ? 'my-static-calendar__day--selected' : '',
+                disabled ? 'my-static-calendar__day--disabled' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {toNepaliNumber(date.day)}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="my-static-calendar__header">
+        <button type="button" onClick={goToPreviousMonth}>
+          Prev
+        </button>
+
+        <strong>
+          {BS_MONTHS[viewMonth - 1]} {viewYear}
+        </strong>
+
+        <button type="button" onClick={goToNextMonth}>
+          Next
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default MyStaticCalendarComponent
+
+function MyComponent() {
+  const [date, setDate] = useState<string | null>(null)
+
+  return (
+    <NepaliCalendar
+      value={date}
+      onChange={setDate}
+      calendarComponent={CustomCalendar}
+    />
+  )
+}
+```
+
+```css
+/* Styles */
+
+.my-static-calendar {
+  width: 340px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.my-static-calendar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.my-static-calendar__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.my-static-calendar__filters select {
+  flex: 1;
+  padding: 8px;
+}
+
+.my-static-calendar__weekdays,
+.my-static-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.my-static-calendar__weekdays {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.my-static-calendar__day {
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.my-static-calendar__day--selected {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.my-static-calendar__day--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 ```
 
 ---
@@ -499,7 +749,7 @@ import {
 The calendar currently supports dates from **2076 BS** to **2090 BS** based on the bundled calendar data.
 
 ---
-
+<!-- 
 ## Development
 
 Clone the project and install dependencies:
@@ -520,9 +770,9 @@ Create a local npm package file:
 npm pack
 ```
 
----
+--- -->
 
-## Local Testing With a Demo App
+<!-- ## Local Testing With a Demo App
 
 From your library folder:
 
@@ -572,9 +822,9 @@ Run the demo app:
 
 ```bash
 npm run dev
-```
+``` -->
 
----
+<!-- ---
 
 ## Publishing
 
@@ -604,7 +854,7 @@ npm run build
 npm publish --access public
 ```
 
----
+--- -->
 
 ## License
 
