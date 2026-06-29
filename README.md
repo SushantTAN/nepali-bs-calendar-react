@@ -50,7 +50,7 @@ function App() {
 
 ## New In version 0.2.0 
 
-- New prop "calendarComponent"
+- New prop [calendarComponent](#custom-calendar-component)
 
 ---
 
@@ -285,45 +285,112 @@ import {
   NepaliCalendarViewRenderProps,
 } from 'nepali-bs-calendar-react'
 
-function CustomCalendar({
+function MyStaticCalendarComponent({
+  value,
   viewYear,
   viewMonth,
   calendarCells,
-  isDisabled,
-  handleDayChange,
   goToPreviousMonth,
   goToNextMonth,
+  handleYearChange,
+  handleMonthChange,
+  handleDayChange,
+  availableYears,
+  validMonthsForYear,
+  isDisabled,
+  formatBSDate,
+  toNepaliNumber,
   BS_MONTHS,
   WEEK_DAYS,
-  toNepaliNumber,
 }: NepaliCalendarViewRenderProps) {
   return (
-    <div>
-      <div>
-        <button type="button" onClick={goToPreviousMonth}>Previous</button>
-        <span>{BS_MONTHS[viewMonth - 1]} {viewYear}</span>
-        <button type="button" onClick={goToNextMonth}>Next</button>
+    <div className="my-static-calendar">
+      
+
+      <div className="my-static-calendar__filters">
+        <select
+          value={viewYear}
+          onChange={(e) => handleYearChange(Number(e.target.value))}
+        >
+          {availableYears.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={viewMonth}
+          onChange={(e) => handleMonthChange(Number(e.target.value))}
+        >
+          {validMonthsForYear.map((monthItem) => (
+            <option
+              key={monthItem.month}
+              value={monthItem.month}
+              disabled={monthItem.disabled}
+            >
+              {monthItem.label}
+            </option>
+          ))}
+        </select>
       </div>
-      <div>
+
+      <div className="my-static-calendar__weekdays">
         {WEEK_DAYS.map((day) => (
-          <span key={day}>{day}</span>
+          <div key={day}>{day}</div>
         ))}
       </div>
-      <div>
-        {calendarCells.map((date, index) => (
-          <button
-            key={date ? `${date.year}-${date.month}-${date.day}` : `empty-${index}`}
-            type="button"
-            disabled={!date || isDisabled(date)}
-            onClick={() => date && handleDayChange(date.day)}
-          >
-            {date ? toNepaliNumber(date.day) : ''}
-          </button>
-        ))}
+
+      <div className="my-static-calendar__grid">
+        {calendarCells.map((date, index) => {
+
+            console.log("date", date, calendarCells)
+          if (!date) {
+            return <div key={`empty-${index}`} />
+          }
+
+          const formattedDate = formatBSDate(date)
+          const selected = value === formattedDate
+          const disabled = isDisabled(date)
+
+          return (
+            <button
+              key={formattedDate}
+              type="button"
+              disabled={disabled}
+              onClick={() => handleDayChange(date.day)}
+              className={[
+                'my-static-calendar__day',
+                selected ? 'my-static-calendar__day--selected' : '',
+                disabled ? 'my-static-calendar__day--disabled' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {toNepaliNumber(date.day)}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="my-static-calendar__header">
+        <button type="button" onClick={goToPreviousMonth}>
+          Prev
+        </button>
+
+        <strong>
+          {BS_MONTHS[viewMonth - 1]} {viewYear}
+        </strong>
+
+        <button type="button" onClick={goToNextMonth}>
+          Next
+        </button>
       </div>
     </div>
   )
 }
+
+export default MyStaticCalendarComponent
 
 function MyComponent() {
   const [date, setDate] = useState<string | null>(null)
@@ -336,6 +403,70 @@ function MyComponent() {
     />
   )
 }
+```
+
+```css
+/* Styles */
+
+.my-static-calendar {
+  width: 340px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.my-static-calendar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.my-static-calendar__filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.my-static-calendar__filters select {
+  flex: 1;
+  padding: 8px;
+}
+
+.my-static-calendar__weekdays,
+.my-static-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.my-static-calendar__weekdays {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.my-static-calendar__day {
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+}
+
+.my-static-calendar__day--selected {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.my-static-calendar__day--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 ```
 
 ---
