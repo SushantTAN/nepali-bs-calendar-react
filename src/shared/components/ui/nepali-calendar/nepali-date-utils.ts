@@ -1,5 +1,6 @@
 import { formatDateYMD } from '../../../utils/date'
 import calendarData from './nepali-calendar.data'
+import type { CalendarData } from './nepali-calendar-context'
 
 export type NepaliDateValue = {
   year: number
@@ -37,12 +38,6 @@ export const BS_MONTHS = [
 
 export const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-type CalendarData = {
-  ref_ad: string
-  ref_bs: string
-  years: Record<number, number[]>
-}
-
 export type DetailedBSDate = {
   adDate: string
   bsYear: number
@@ -60,11 +55,25 @@ type DetailedCalendarData = {
 
 type YearsData = Record<number, number[]>
 
-const years = calendarData.years as YearsData
-
-const availableYears = Object.keys(years)
-  .map(Number)
-  .sort((a, b) => a - b)
+export type NepaliDateUtils = {
+  formatBSDate: (date: NepaliDateValue) => string
+  parseBSDate: (value?: string | null) => NepaliDateValue | null
+  getAvailableYears: () => number[]
+  getMonthDays: (year: number, month: number) => number
+  isValidBSDate: (date: NepaliDateValue) => boolean
+  compareBSDates: (a: NepaliDateValue, b: NepaliDateValue) => number
+  getBSOrdinal: (date: NepaliDateValue) => number
+  getDaysDifferenceFromRef: (target: NepaliDateValue) => number
+  bsToAd: (bsDate: NepaliDateValue) => Date
+  getWeekdayOfBSDate: (bsDate: NepaliDateValue) => number
+  getFirstValidDate: () => NepaliDateValue
+  getTodayBSFallback: () => NepaliDateValue
+  adToBs: (adDate: Date) => NepaliDateValue
+  adStringToBs: (adString?: string | null) => string | undefined
+  bsStringToAd: (bsString?: string | null) => string | null | undefined
+  adStringToBsWithTime: (adString?: string | null) => string | undefined
+  toNepaliNumber: (value: string | number) => string
+}
 
 export function padNumber(value: number) {
   return String(value).padStart(2, '0')
@@ -87,10 +96,6 @@ function addDaysUTC(date: Date, days: number) {
   const copied = new Date(date.getTime())
   copied.setUTCDate(copied.getUTCDate() + days)
   return copied
-}
-
-export function formatBSDate(date: NepaliDateValue) {
-  return `${date.year}-${padNumber(date.month)}-${padNumber(date.day)}`
 }
 
 export const generateDetailedData = (data: CalendarData): DetailedCalendarData => {
@@ -167,109 +172,229 @@ export const generateDetailedData = (data: CalendarData): DetailedCalendarData =
   }
 }
 
-const dataDetailed = generateDetailedData(calendarData)
+export const createNepaliDateUtils = (data: CalendarData): NepaliDateUtils => {
+  const years = data.years as YearsData
+  const availableYears = Object.keys(years)
+    .map(Number)
+    .sort((a, b) => a - b)
+
+  const dataDetailed = generateDetailedData(data)
+
+  const formatBSDate = (date: NepaliDateValue) => {
+    return `${date.year}-${padNumber(date.month)}-${padNumber(date.day)}`
+  }
+
+  const parseBSDate = (value?: string | null): NepaliDateValue | null => {
+    if (!value) return null
+
+    const parts = value.split('-').map(Number)
+
+    if (parts.length !== 3) return null
+
+    const [year, month, day] = parts
+
+    if (!year || !month || !day) return null
+
+    return { year, month, day }
+  }
+
+  const getAvailableYears = () => availableYears
+
+  const getMonthDays = (year: number, month: number) => years[year]?.[month - 1] ?? 0
+
+  const isValidBSDate = (date: NepaliDateValue) => {
+    const daysInMonth = getMonthDays(date.year, date.month)
+
+    return (
+      Boolean(daysInMonth) &&
+      date.month >= 1 &&
+      date.month <= 12 &&
+      date.day >= 1 &&
+      date.day <= daysInMonth
+    )
+  }
+
+  const compareBSDates = (a: NepaliDateValue, b: NepaliDateValue) => {
+    if (a.year !== b.year) return a.year - b.year
+    if (a.month !== b.month) return a.month - b.month
+    return a.day - b.day
+  }
+
+  const getBSOrdinal = (date: NepaliDateValue) => {
+    const key = formatBSDate(date)
+    const ordinal = dataDetailed.bsOrdinal[key]
+
+    if (ordinal === undefined) {
+      throw new Error(`Invalid BS date: ${formatBSDate(date)}`)
+    }
+
+    return ordinal
+  }
+
+  const getDaysDifferenceFromRef = (target: NepaliDateValue) => {
+    const refBs = parseBSDate(data.ref_bs)
+
+    if (!refBs) {
+      throw new Error('Invalid reference BS date')
+    }
+
+    return getBSOrdinal(target) - getBSOrdinal(refBs)
+  }
+
+  const bsToAd = (bsDate: NepaliDateValue) => {
+    if (!isValidBSDate(bsDate)) {
+      throw new Error(`Invalid BS date: ${formatBSDate(bsDate)}`)
+    }
+
+    const bsKey = formatBSDate(bsDate)
+    const adDate = dataDetailed.bsToAd[bsKey]
+
+    if (!adDate) {
+      throw new Error(`Invalid BS date: ${formatBSDate(bsDate)}`)
+    }
+
+    return toUTCDate(adDate)
+  }
+
+  const getWeekdayOfBSDate = (bsDate: NepaliDateValue) => bsToAd(bsDate).getUTCDay()
+
+  const getFirstValidDate = () => {
+    for (const year of availableYears) {
+      for (let month = 1; month <= 12; month++) {
+        if (getMonthDays(year, month) > 0) {
+          return { year, month, day: 1 }
+        }
+      }
+    }
+
+    throw new Error('No valid date found in calendar data')
+  }
+
+  const getTodayBSFallback = () => getFirstValidDate()
+
+  const adToBs = (adDate: Date) => {
+    const adKey = formatDateKey(adDate)
+    const bs = dataDetailed.adToBs[adKey]
+
+    if (bs) {
+      return {
+        year: bs.bsYear,
+        month: bs.bsMonth,
+        day: bs.bsDay,
+      }
+    }
+
+    const refAd = toUTCDate(data.ref_ad)
+    const refBs = parseBSDate(data.ref_bs)!
+
+    let daysDiff = Math.floor((adDate.getTime() - refAd.getTime()) / (1000 * 60 * 60 * 24))
+
+    let year = refBs.year
+    let month = refBs.month
+    let day = refBs.day
+
+    while (daysDiff > 0) {
+      day++
+
+      const daysInMonth = getMonthDays(year, month)
+
+      if (day > daysInMonth) {
+        day = 1
+        month++
+
+        if (month > 12) {
+          month = 1
+          year++
+        }
+      }
+
+      daysDiff--
+    }
+
+    return { year, month, day }
+  }
+
+  const adStringToBs = (adString?: string | null) => {
+    if (!adString) return undefined
+
+    const date = new Date(adString)
+    const bs = adToBs(date)
+
+    return formatBSDate(bs)
+  }
+
+  const bsStringToAd = (bsString?: string | null) => {
+    if (!bsString) return undefined
+
+    const parsed = parseBSDate(bsString)
+    if (!parsed) return null
+
+    const ad = bsToAd(parsed)
+
+    return formatDateYMD(ad)
+  }
+
+  const adStringToBsWithTime = (adString?: string | null) => {
+    if (!adString) return undefined
+
+    const date = new Date(adString)
+    const bs = adToBs(date)
+
+    return `${formatBSDate(bs)} ${formatTime12Hour(date)}`
+  }
+
+  const toNepaliNumber = (value: string | number) => {
+    return String(value)
+      .split('')
+      .map((char) => EN_TO_NP_NUMBER_MAP[char] ?? char)
+      .join('')
+  }
+
+  return {
+    formatBSDate,
+    parseBSDate,
+    getAvailableYears,
+    getMonthDays,
+    isValidBSDate,
+    compareBSDates,
+    getBSOrdinal,
+    getDaysDifferenceFromRef,
+    bsToAd,
+    getWeekdayOfBSDate,
+    getFirstValidDate,
+    getTodayBSFallback,
+    adToBs,
+    adStringToBs,
+    bsStringToAd,
+    adStringToBsWithTime,
+    toNepaliNumber,
+  }
+}
+
+const defaultDateUtils = createNepaliDateUtils(calendarData)
+
+export const formatBSDate = defaultDateUtils.formatBSDate
+export const parseBSDate = defaultDateUtils.parseBSDate
+export const getAvailableYears = defaultDateUtils.getAvailableYears
+export const getMonthDays = defaultDateUtils.getMonthDays
+export const isValidBSDate = defaultDateUtils.isValidBSDate
+export const compareBSDates = defaultDateUtils.compareBSDates
+export const getBSOrdinal = defaultDateUtils.getBSOrdinal
+export const getDaysDifferenceFromRef = defaultDateUtils.getDaysDifferenceFromRef
+export const bsToAd = defaultDateUtils.bsToAd
+export const getWeekdayOfBSDate = defaultDateUtils.getWeekdayOfBSDate
+export const getFirstValidDate = defaultDateUtils.getFirstValidDate
+export const getTodayBSFallback = defaultDateUtils.getTodayBSFallback
+export const adToBs = defaultDateUtils.adToBs
+export const adStringToBs = defaultDateUtils.adStringToBs
+export const bsStringToAd = defaultDateUtils.bsStringToAd
+export const adStringToBsWithTime = defaultDateUtils.adStringToBsWithTime
 
 export function toNepaliNumber(value: string | number) {
   return String(value)
     .split('')
     .map((char) => EN_TO_NP_NUMBER_MAP[char] ?? char)
     .join('')
-}
-
-export function parseBSDate(value?: string | null): NepaliDateValue | null {
-  if (!value) return null
-
-  const parts = value.split('-').map(Number)
-
-  if (parts.length !== 3) return null
-
-  const [year, month, day] = parts
-
-  if (!year || !month || !day) return null
-
-  return { year, month, day }
-}
-
-export function getAvailableYears() {
-  return availableYears
-}
-
-export function getMonthDays(year: number, month: number) {
-  return years[year]?.[month - 1] ?? 0
-}
-
-export function isValidBSDate(date: NepaliDateValue) {
-  const daysInMonth = getMonthDays(date.year, date.month)
-
-  return (
-    Boolean(daysInMonth) &&
-    date.month >= 1 &&
-    date.month <= 12 &&
-    date.day >= 1 &&
-    date.day <= daysInMonth
-  )
-}
-
-export function compareBSDates(a: NepaliDateValue, b: NepaliDateValue) {
-  if (a.year !== b.year) return a.year - b.year
-  if (a.month !== b.month) return a.month - b.month
-  return a.day - b.day
-}
-
-export function getBSOrdinal(date: NepaliDateValue) {
-  const key = formatBSDate(date)
-  const ordinal = dataDetailed.bsOrdinal[key]
-
-  if (ordinal === undefined) {
-    throw new Error(`Invalid BS date: ${formatBSDate(date)}`)
-  }
-
-  return ordinal
-}
-
-export function getDaysDifferenceFromRef(target: NepaliDateValue) {
-  const refBs = parseBSDate(calendarData.ref_bs)
-
-  if (!refBs) {
-    throw new Error('Invalid reference BS date')
-  }
-
-  return getBSOrdinal(target) - getBSOrdinal(refBs)
-}
-
-export function bsToAd(bsDate: NepaliDateValue) {
-  if (!isValidBSDate(bsDate)) {
-    throw new Error(`Invalid BS date: ${formatBSDate(bsDate)}`)
-  }
-
-  const bsKey = formatBSDate(bsDate)
-  const adDate = dataDetailed.bsToAd[bsKey]
-
-  if (!adDate) {
-    throw new Error(`Invalid BS date: ${formatBSDate(bsDate)}`)
-  }
-
-  return toUTCDate(adDate)
-}
-
-export function getWeekdayOfBSDate(bsDate: NepaliDateValue) {
-  return bsToAd(bsDate).getUTCDay() // 0 = Sunday
-}
-
-export function getFirstValidDate() {
-  for (const year of availableYears) {
-    for (let month = 1; month <= 12; month++) {
-      if (getMonthDays(year, month) > 0) {
-        return { year, month, day: 1 }
-      }
-    }
-  }
-
-  throw new Error('No valid date found in calendar data')
-}
-
-export function getTodayBSFallback() {
-  return getFirstValidDate()
 }
 
 function formatTime12Hour(date: Date) {
@@ -281,76 +406,4 @@ function formatTime12Hour(date: Date) {
   hours = hours || 12
 
   return `${padNumber(hours)}:${minutes} ${ampm}`
-}
-
-export function adToBs(adDate: Date) {
-  const adKey = formatDateKey(adDate)
-  const bs = dataDetailed.adToBs[adKey]
-
-  if (bs) {
-    return {
-      year: bs.bsYear,
-      month: bs.bsMonth,
-      day: bs.bsDay,
-    }
-  }
-
-  // Fallback keeps old behavior for out-of-range dates.
-  const refAd = toUTCDate(calendarData.ref_ad)
-  const refBs = parseBSDate(calendarData.ref_bs)!
-
-  let daysDiff = Math.floor((adDate.getTime() - refAd.getTime()) / (1000 * 60 * 60 * 24))
-
-  let year = refBs.year
-  let month = refBs.month
-  let day = refBs.day
-
-  while (daysDiff > 0) {
-    day++
-
-    const daysInMonth = getMonthDays(year, month)
-
-    if (day > daysInMonth) {
-      day = 1
-      month++
-
-      if (month > 12) {
-        month = 1
-        year++
-      }
-    }
-
-    daysDiff--
-  }
-
-  return { year, month, day }
-}
-
-export function adStringToBs(adString?: string | null) {
-  if (!adString) return undefined
-
-  const date = new Date(adString)
-  const bs = adToBs(date)
-
-  return formatBSDate(bs)
-}
-
-export function bsStringToAd(bsString?: string | null) {
-  if (!bsString) return undefined
-
-  const parsed = parseBSDate(bsString)
-  if (!parsed) return null
-
-  const ad = bsToAd(parsed)
-
-  return formatDateYMD(ad)
-}
-
-export function adStringToBsWithTime(adString?: string | null) {
-  if (!adString) return undefined
-
-  const date = new Date(adString)
-  const bs = adToBs(date)
-
-  return `${formatBSDate(bs)} ${formatTime12Hour(date)}`
 }

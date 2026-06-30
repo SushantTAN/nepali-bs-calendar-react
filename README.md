@@ -51,7 +51,7 @@ Note: Data can be extracted from the scraper as well: [nepali-calendar-scraper](
 
 ---
 
-## New In version 0.2.0 
+## New In version 1.0.1 
 
 - New prop [calendarComponent](#custom-calendar-component)
 
@@ -183,6 +183,43 @@ function App() {
 > ```tsx
 > import 'nepali-bs-calendar-react/styles.css'
 > ```
+
+---
+
+## Provider-backed Date Utilities
+
+If you want to use the date helpers outside the calendar UI, you can use the `useNepaliDateUtils` hook. It exposes the same utility functions as the package exports, but they are bound to the calendar data provided through `NepaliCalendarProvider`.
+
+```tsx
+import {
+  NepaliCalendarProvider,
+  defaultCalendarData,
+  useNepaliDateUtils,
+} from 'nepali-bs-calendar-react'
+
+function DateInfo() {
+  const utils = useNepaliDateUtils()
+
+  const firstDate = utils.getFirstValidDate()
+  const formatted = utils.formatBSDate(firstDate)
+  const weekday = utils.getWeekdayOfBSDate(firstDate)
+
+  return (
+    <div>
+      <p>First valid BS date: {formatted}</p>
+      <p>Weekday: {weekday}</p>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <NepaliCalendarProvider data={defaultCalendarData}>
+      <DateInfo />
+    </NepaliCalendarProvider>
+  )
+}
+```
 
 ---
 

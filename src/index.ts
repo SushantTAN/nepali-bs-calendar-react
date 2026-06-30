@@ -1,3 +1,5 @@
+/// <reference path="./global.d.ts" />
+
 import './styles.css'
 
 export {
@@ -14,6 +16,7 @@ export { default } from './shared/components/ui/nepali-calendar/nepali-calendar'
 export {
   NepaliCalendarProvider,
   useNepaliCalendarContext,
+  useNepaliDateUtils,
 } from './shared/components/ui/nepali-calendar/nepali-calendar-context'
 export type {
   CalendarData,
