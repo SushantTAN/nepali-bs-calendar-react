@@ -1,4 +1,6 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode } from 'react';
+
+import { createNepaliDateUtils, type NepaliDateUtils } from './nepali-date-utils';
 
 export interface CalendarData {
   ref_ad: string;
@@ -8,6 +10,7 @@ export interface CalendarData {
 
 interface NepaliCalendarContextType {
   data: CalendarData;
+  dateUtils: NepaliDateUtils;
 }
 
 const NepaliCalendarContext = createContext<NepaliCalendarContextType | undefined>(undefined);
@@ -20,14 +23,22 @@ export const useNepaliCalendarContext = () => {
   return context;
 };
 
+export const useNepaliDateUtils = () => {
+  return useNepaliCalendarContext().dateUtils;
+};
+
 interface NepaliCalendarProviderProps {
   data: CalendarData;
   children: ReactNode;
 }
 
 export const NepaliCalendarProvider: React.FC<NepaliCalendarProviderProps> = ({ data, children }) => {
+  const dateUtils = useMemo(() => createNepaliDateUtils(data), [data]);
+
+  const value = useMemo(() => ({ data, dateUtils }), [data, dateUtils]);
+
   return (
-    <NepaliCalendarContext.Provider value={{ data }}>
+    <NepaliCalendarContext.Provider value={value}>
       {children}
     </NepaliCalendarContext.Provider>
   );
